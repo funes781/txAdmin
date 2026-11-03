@@ -1,0 +1,140 @@
+/*
+  Name:   txcfg
+  Theme for the fivem-cfg CodeMirror mode, based on VS Code's Dark+ / Light+.
+  Light by default, switches to dark when the panel adds `theme--dark` to <body>
+  (the panel toggles that class live inside the iframe).
+*/
+
+.cm-s-txcfg {
+    --cfg-bg: #ffffff;
+    --cfg-fg: #1f1f1f;
+    --cfg-gutter-bg: #ffffff;
+    --cfg-gutter-border: #e5e5e5;
+    --cfg-linenumber: #6e7681;
+    --cfg-linenumber-active: #0b216f;
+    --cfg-activeline: #f3f6fb;
+    --cfg-selection: #add6ff;
+    --cfg-selection-unfocused: #e5ebf1;
+    --cfg-cursor: #000000;
+
+    --cfg-comment: #008000;
+    --cfg-keyword: #0000ff;
+    --cfg-command: #795e26;
+    --cfg-resource: #267f99;
+    --cfg-convar: #001080;
+    --cfg-string: #a31515;
+    --cfg-number: #098658;
+    --cfg-atom: #0000ff;
+    --cfg-principal: #af00db;
+    --cfg-variable: #1f1f1f;
+    --cfg-operator: #1f1f1f;
+}
+
+body.theme--dark .cm-s-txcfg {
+    --cfg-bg: #1e1f22;
+    --cfg-fg: #d4d4d4;
+    --cfg-gutter-bg: #1e1f22;
+    --cfg-gutter-border: #2d2e32;
+    --cfg-linenumber: #6e7681;
+    --cfg-linenumber-active: #cccccc;
+    --cfg-activeline: #26282c;
+    --cfg-selection: #264f78;
+    --cfg-selection-unfocused: #3a3d41;
+    --cfg-cursor: #aeafad;
+
+    --cfg-comment: #6a9955;
+    --cfg-keyword: #569cd6;
+    --cfg-command: #dcdcaa;
+    --cfg-resource: #4ec9b0;
+    --cfg-convar: #9cdcfe;
+    --cfg-string: #ce9178;
+    --cfg-number: #b5cea8;
+    --cfg-atom: #569cd6;
+    --cfg-principal: #c586c0;
+    --cfg-variable: #d4d4d4;
+    --cfg-operator: #d4d4d4;
+}
+
+/* Base */
+.cm-s-txcfg.CodeMirror {
+    background-color: var(--cfg-bg);
+    color: var(--cfg-fg);
+    border: 1px solid var(--cfg-gutter-border);
+    border-radius: 0.5rem;
+    font-family: Consolas, 'Cascadia Code', 'JetBrains Mono', Menlo, Monaco, 'Courier New', monospace;
+    line-height: 1.5;
+}
+.cm-s-txcfg .CodeMirror-gutters {
+    background-color: var(--cfg-gutter-bg);
+    border-right: 1px solid var(--cfg-gutter-border);
+}
+.cm-s-txcfg .CodeMirror-linenumber {
+    color: var(--cfg-linenumber);
+    padding: 0 12px 0 8px;
+}
+.cm-s-txcfg .CodeMirror-activeline .CodeMirror-linenumber,
+.cm-s-txcfg .CodeMirror-activeline-gutter .CodeMirror-linenumber {
+    color: var(--cfg-linenumber-active);
+}
+.cm-s-txcfg .CodeMirror-cursor {
+    border-left: 2px solid var(--cfg-cursor);
+}
+.cm-s-txcfg .CodeMirror-lines {
+    padding: 6px 0;
+}
+.cm-s-txcfg pre.CodeMirror-line,
+.cm-s-txcfg pre.CodeMirror-line-like {
+    padding: 0 10px;
+}
+
+/* Active line */
+.cm-s-txcfg .CodeMirror-activeline-background {
+    background: var(--cfg-activeline);
+}
+
+/* Selection */
+.cm-s-txcfg div.CodeMirror-selected {
+    background: var(--cfg-selection-unfocused);
+}
+.cm-s-txcfg.CodeMirror-focused div.CodeMirror-selected {
+    background: var(--cfg-selection);
+}
+.cm-s-txcfg .CodeMirror-line::selection,
+.cm-s-txcfg .CodeMirror-line > span::selection,
+.cm-s-txcfg .CodeMirror-line > span > span::selection {
+    background: var(--cfg-selection);
+}
+.cm-s-txcfg .CodeMirror-line::-moz-selection,
+.cm-s-txcfg .CodeMirror-line > span::-moz-selection,
+.cm-s-txcfg .CodeMirror-line > span > span::-moz-selection {
+    background: var(--cfg-selection);
+}
+
+/* Search matches */
+.cm-s-txcfg .cm-searching {
+    background-color: rgba(234, 92, 0, 0.33);
+    border-radius: 2px;
+}
+
+/* Tokens */
+.cm-s-txcfg span.cm-comment { color: var(--cfg-comment); }
+.cm-s-txcfg span.cm-keyword { color: var(--cfg-keyword); }
+.cm-s-txcfg span.cm-builtin,
+.cm-s-txcfg span.cm-def { color: var(--cfg-command); }
+.cm-s-txcfg span.cm-variable-2 { color: var(--cfg-resource); }
+.cm-s-txcfg span.cm-property { color: var(--cfg-convar); }
+.cm-s-txcfg span.cm-string,
+.cm-s-txcfg span.cm-string-2 { color: var(--cfg-string); }
+.cm-s-txcfg span.cm-number { color: var(--cfg-number); }
+.cm-s-txcfg span.cm-atom { color: var(--cfg-atom); }
+.cm-s-txcfg span.cm-variable-3 { color: var(--cfg-principal); }
+.cm-s-txcfg span.cm-variable { color: var(--cfg-variable); }
+.cm-s-txcfg span.cm-operator { color: var(--cfg-operator); }
+
+/* Search/goto dialog (CodeMirror addon/dialog) */
+.cm-s-txcfg .CodeMirror-dialog {
+    background: var(--cfg-bg);
+    color: var(--cfg-fg);
+}
+.cm-s-txcfg .CodeMirror-dialog-top { border-bottom: 1px solid var(--cfg-gutter-border); }
+.cm-s-txcfg .CodeMirror-dialog-bottom { border-top: 1px solid var(--cfg-gutter-border); }

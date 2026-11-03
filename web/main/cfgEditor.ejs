@@ -5,13 +5,21 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/codemirror.min.css" 
     integrity="sha512-xIf9AdJauwKIVtrVRZ0i4nHP61Ogx9fSRAkCLecmE2dL/U8ioWpDvFCAy4dcfecN72HHB9+7FfQj3aiO68aaaw==" 
     crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="stylesheet" href="<%= resourcePath %>css/codemirror_lucario.css?txVer=<%= txAdminVersion %>">
+<link rel="stylesheet" href="<%= resourcePath %>css/codemirror_txcfg.css?txVer=<%= txAdminVersion %>">
 <style>
-    .cm-s-lucario{
-        font-size: 1.05rem !important;
+    .cm-s-txcfg{
+        font-size: 0.95rem !important;
     }
     .CodeMirror{
         height: calc(100vh - 250px);
+    }
+    .cfgEditor-hints {
+        font-size: 0.8rem;
+        opacity: 0.7;
+    }
+    .cfgEditor-hints kbd {
+        font-size: 0.75rem;
+        padding: 1px 5px;
     }
 
     /* https://codemirror.net/5/addon/dialog/dialog.css */
@@ -54,14 +62,22 @@
 <div class="row justify-content-md-center">
     <div class="col-lg-12 col-xl-11 mw-col8">
         <textarea id="codeMirrorTarget" style="height: calc(100vh - 250px); width: 100%;"
-            class="cms-s-lucario" name="code"><%= rawFile %></textarea>
+            class="cm-s-txcfg" name="code"><%= rawFile %></textarea>
     </div>
 </div>
 <div class="row justify-content-md-center" style="margin-top: 1em;">
-    <div class="mx-auto">
+    <div class="mx-auto text-center">
         <button type="button" id="cfgEditor-save" class="btn btn-outline-dark btn-sm mb-2">
             Save File (CTRL+S)
         </button>
+        <div class="cfgEditor-hints">
+            <kbd>Ctrl+/</kbd> toggle comment &middot;
+            <kbd>Alt+&uarr;/&darr;</kbd> move line &middot;
+            <kbd>Shift+Alt+&uarr;/&darr;</kbd> copy line &middot;
+            <kbd>Ctrl+Shift+K</kbd> delete line &middot;
+            <kbd>Ctrl+Enter</kbd> new line below &middot;
+            <kbd>Ctrl+F</kbd> search
+        </div>
     </div>
 </div>
 
@@ -81,6 +97,159 @@
 <script src="<%= resourcePath %>js/codeEditor/search.js?txVer=<%= txAdminVersion %>"></script>
 
 <script>
+    //============================================== VS Code-like helpers
+    // Returns the selections merged into non-overlapping line ranges [from, to]
+    const getSelectedLineRanges = (cm) => {
+        const ranges = cm.listSelections().map((sel) => {
+            const from = Math.min(sel.anchor.line, sel.head.line);
+            let to = Math.max(sel.anchor.line, sel.head.line);
+            // Like VS Code: a selection ending at column 0 doesn't include that line
+            const end = (sel.anchor.line > sel.head.line || (sel.anchor.line === sel.head.line && sel.anchor.ch > sel.head.ch)) ? sel.anchor : sel.head;
+            if (to > from && end.ch === 0) to--;
+            return { from, to };
+        }).sort((a, b) => a.from - b.from);
+        const merged = [];
+        for (const r of ranges) {
+            const last = merged[merged.length - 1];
+            if (last && r.from <= last.to + 1) {
+                last.to = Math.max(last.to, r.to);
+            } else {
+                merged.push({ ...r });
+            }
+        }
+        return merged;
+    };
+
+    const shiftSelections = (cm, lineDelta) => {
+        cm.setSelections(cm.listSelections().map((sel) => ({
+            anchor: CodeMirror.Pos(sel.anchor.line + lineDelta, sel.anchor.ch),
+            head: CodeMirror.Pos(sel.head.line + lineDelta, sel.head.ch),
+        })));
+    };
+
+    const moveLines = (cm, dir) => {
+        const ranges = getSelectedLineRanges(cm);
+        if (dir < 0 && ranges[0].from === 0) return;
+        if (dir > 0 && ranges[ranges.length - 1].to >= cm.lastLine()) return;
+        const selections = cm.listSelections();
+        cm.operation(() => {
+            const ordered = dir < 0 ? ranges : [...ranges].reverse();
+            for (const { from, to } of ordered) {
+                if (dir < 0) {
+                    const above = cm.getLine(from - 1);
+                    cm.replaceRange('', CodeMirror.Pos(from - 1, 0), CodeMirror.Pos(from, 0));
+                    cm.replaceRange(above + '\n', CodeMirror.Pos(to, 0));
+                } else {
+                    const below = cm.getLine(to + 1);
+                    cm.replaceRange('', CodeMirror.Pos(to, cm.getLine(to).length), CodeMirror.Pos(to + 1, below.length));
+                    cm.replaceRange(below + '\n', CodeMirror.Pos(from, 0));
+                }
+            }
+            cm.setSelections(selections);
+            shiftSelections(cm, dir);
+        });
+    };
+
+    const copyLines = (cm, dir) => {
+        const ranges = getSelectedLineRanges(cm);
+        const selections = cm.listSelections();
+        cm.operation(() => {
+            for (const { from, to } of [...ranges].reverse()) {
+                const text = cm.getRange(CodeMirror.Pos(from, 0), CodeMirror.Pos(to, cm.getLine(to).length));
+                cm.replaceRange(text + '\n', CodeMirror.Pos(from, 0));
+            }
+        });
+        if (dir > 0) {
+            // keep cursor on the lower copy, shifting by the size of each copied block above it
+            cm.setSelections(selections.map((sel) => {
+                const delta = ranges
+                    .filter((r) => r.from <= Math.min(sel.anchor.line, sel.head.line))
+                    .reduce((acc, r) => acc + (r.to - r.from + 1), 0);
+                return {
+                    anchor: CodeMirror.Pos(sel.anchor.line + delta, sel.anchor.ch),
+                    head: CodeMirror.Pos(sel.head.line + delta, sel.head.ch),
+                };
+            }));
+        } else {
+            cm.setSelections(selections.map((sel) => {
+                const delta = ranges
+                    .filter((r) => r.to < Math.min(sel.anchor.line, sel.head.line))
+                    .reduce((acc, r) => acc + (r.to - r.from + 1), 0);
+                return {
+                    anchor: CodeMirror.Pos(sel.anchor.line + delta, sel.anchor.ch),
+                    head: CodeMirror.Pos(sel.head.line + delta, sel.head.ch),
+                };
+            }));
+        }
+    };
+
+    const deleteLines = (cm) => {
+        const ranges = getSelectedLineRanges(cm);
+        cm.operation(() => {
+            for (const { from, to } of [...ranges].reverse()) {
+                if (to < cm.lastLine()) {
+                    cm.replaceRange('', CodeMirror.Pos(from, 0), CodeMirror.Pos(to + 1, 0));
+                } else if (from > 0) {
+                    cm.replaceRange('', CodeMirror.Pos(from - 1, cm.getLine(from - 1).length), CodeMirror.Pos(to, cm.getLine(to).length));
+                } else {
+                    cm.replaceRange('', CodeMirror.Pos(0, 0), CodeMirror.Pos(to, cm.getLine(to).length));
+                }
+            }
+        });
+    };
+
+    const insertLine = (cm, below) => {
+        cm.operation(() => {
+            const sels = cm.listSelections();
+            const newPositions = [];
+            for (let i = sels.length - 1; i >= 0; i--) {
+                const line = below
+                    ? Math.max(sels[i].anchor.line, sels[i].head.line)
+                    : Math.min(sels[i].anchor.line, sels[i].head.line);
+                const indent = (cm.getLine(line).match(/^\s*/) || [''])[0];
+                if (below) {
+                    cm.replaceRange('\n' + indent, CodeMirror.Pos(line, cm.getLine(line).length));
+                    newPositions.push(CodeMirror.Pos(line + 1, indent.length));
+                } else {
+                    cm.replaceRange(indent + '\n', CodeMirror.Pos(line, 0));
+                    newPositions.push(CodeMirror.Pos(line, indent.length));
+                }
+            }
+            cm.setSelections(newPositions.reverse().map((p) => ({ anchor: p, head: p })));
+        });
+    };
+
+    const toggleLineComment = (cm) => {
+        cm.toggleComment({ lineComment: '#', padding: ' ' });
+    };
+
+    // Highlights the line(s) with the cursor, like VS Code
+    const setupActiveLine = (cm) => {
+        let active = [];
+        const update = () => {
+            cm.operation(() => {
+                for (const handle of active) {
+                    cm.removeLineClass(handle, 'wrap', 'CodeMirror-activeline');
+                    cm.removeLineClass(handle, 'background', 'CodeMirror-activeline-background');
+                    cm.removeLineClass(handle, 'gutter', 'CodeMirror-activeline-gutter');
+                }
+                active = [];
+                for (const sel of cm.listSelections()) {
+                    if (!sel.empty()) continue;
+                    const handle = cm.getLineHandleVisualStart(sel.head.line);
+                    if (active.includes(handle)) continue;
+                    cm.addLineClass(handle, 'wrap', 'CodeMirror-activeline');
+                    cm.addLineClass(handle, 'background', 'CodeMirror-activeline-background');
+                    cm.addLineClass(handle, 'gutter', 'CodeMirror-activeline-gutter');
+                    active.push(handle);
+                }
+            });
+        };
+        cm.on('cursorActivity', update);
+        update();
+    };
+
+
     //============================================== CodeMirror & Hook Setup
     const saveButton = document.getElementById('cfgEditor-save');
 
@@ -90,16 +259,38 @@
             mode: "fivem-cfg",
             lineNumbers: true,
             lineWrapping: true,
-            theme: "lucario" //NOTE: I modified the theme a bit
+            indentUnit: 4,
+            tabSize: 4,
+            theme: "txcfg",
+            extraKeys: CodeMirror.normalizeKeyMap({
+                'Ctrl-/': toggleLineComment,
+                'Cmd-/': toggleLineComment,
+                'Ctrl-;': toggleLineComment, //legacy txAdmin bind
+                'Alt-Up': (cm) => moveLines(cm, -1),
+                'Alt-Down': (cm) => moveLines(cm, 1),
+                'Shift-Alt-Up': (cm) => copyLines(cm, -1),
+                'Shift-Alt-Down': (cm) => copyLines(cm, 1),
+                'Ctrl-Shift-K': deleteLines,
+                'Cmd-Shift-K': deleteLines,
+                'Ctrl-Enter': (cm) => insertLine(cm, true),
+                'Cmd-Enter': (cm) => insertLine(cm, true),
+                'Shift-Ctrl-Enter': (cm) => insertLine(cm, false),
+                'Shift-Cmd-Enter': (cm) => insertLine(cm, false),
+                'Ctrl-]': 'indentMore',
+                'Ctrl-[': 'indentLess',
+                'Tab': (cm) => {
+                    if (cm.somethingSelected()) return cm.execCommand('indentMore');
+                    cm.replaceSelection(' '.repeat(cm.getOption('indentUnit')));
+                },
+                'Shift-Tab': 'indentLess',
+            }),
         });
+        setupActiveLine(window.CMInstance);
 
         window.addEventListener("keydown", (event) => {
-            if (event.ctrlKey && event.key == 's') {
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() == 's') {
                 event.preventDefault();
                 saveButton.click();
-            } else if (event.ctrlKey && event.key == ';') {
-                window.CMInstance.toggleComment({lineComment: "#"})
-                event.preventDefault();
             }
         })
     };
