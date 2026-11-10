@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, List, styled } from "@mui/material";
-import { MenuListItem, MenuListItemMulti } from "./MenuListItem";
+import { MenuListItem, MenuListItemMulti, MenuListItemTime } from "./MenuListItem";
 import {
   AccessibilityNew,
   Announcement,
@@ -20,6 +20,23 @@ import {
   DeleteForever,
   RocketLaunch,
   AirlineStops,
+  WbSunny,
+  LightMode,
+  WbCloudy,
+  Cloud,
+  FilterDrama,
+  BlurOn,
+  Grain,
+  Thunderstorm,
+  AcUnit,
+  Cyclone,
+  Celebration,
+  NightsStay,
+  Masks,
+  FormatListBulleted,
+  AccessTime,
+  PauseCircle,
+  PlayCircle,
   // Stream //Spawn Weapon action
 } from "@mui/icons-material";
 import { useKeyboardNavigation } from "../../hooks/useKeyboardNavigation";
@@ -38,6 +55,28 @@ import { useIsRedmValue } from "@nui/src/state/isRedm.state";
 import { getVehicleSpawnDialogData, vehiclePlaceholderReplacer } from "@nui/src/utils/vehicleSpawnDialogHelper";
 import { useNuiEvent } from "@nui/src/hooks/useNuiEvent";
 import { usePlayerModalContext } from "@nui/src/provider/PlayerModalProvider";
+import { WorldState, formatTime, getWorldTime, useWorldState } from "@nui/src/state/world.state";
+import { usePermissionsValue } from "@nui/src/state/permissions.state";
+import { userHasPerm } from "@nui/src/utils/miscUtils";
+import { WEATHER_TYPES, WeatherType, findWeather } from "@nui/src/utils/worldWeather";
+
+const weatherIcons: Record<WeatherType, JSX.Element> = {
+  EXTRASUNNY: <LightMode />,
+  CLEAR: <WbSunny />,
+  NEUTRAL: <WbCloudy />,
+  SMOG: <Masks />,
+  FOGGY: <BlurOn />,
+  OVERCAST: <Cloud />,
+  CLOUDS: <FilterDrama />,
+  CLEARING: <WbCloudy />,
+  RAIN: <Grain />,
+  THUNDER: <Thunderstorm />,
+  SNOW: <AcUnit />,
+  BLIZZARD: <Cyclone />,
+  SNOWLIGHT: <AcUnit />,
+  XMAS: <Celebration />,
+  HALLOWEEN: <NightsStay />,
+};
 
 const fadeHeight = 20;
 const listHeight = 402;
@@ -86,6 +125,8 @@ export const MainPageList: React.FC = () => {
   const isRedm = useIsRedmValue()
   const { closeMenu } = usePlayerModalContext();
   const [lastVehicleSpawned, setLastVehicleSpawned] = useState<string | null>(null);
+  const [worldState, setWorldState] = useWorldState();
+  const userPerms = usePermissionsValue();
 
   //FIXME: this is so the menu resets multi selectors when we close it
   // but it is not working, and when I do this the first time we press
@@ -299,6 +340,105 @@ export const MainPageList: React.FC = () => {
     handleClearArea(true);
   });
 
+  //=============================================
+  const updateWorldState = (data: Omit<WorldState, "receivedAt">) => {
+    if (!data || typeof data !== "object") return;
+    setWorldState({ ...data, receivedAt: Date.now() });
+  };
+  useNuiEvent<Omit<WorldState, "receivedAt">>("setWorldState", updateWorldState);
+  useEffect(() => {
+    if (!menuVisible) return;
+    fetchNui<Omit<WorldState, "receivedAt">>("getWorldState", {}, {
+      mockResp: { enabled: true, weather: "CLEAR", hour: 14, minute: 32, frozen: false, msPerMinute: 2000 },
+    })
+      .then(updateWorldState)
+      .catch(() => {});
+  }, [menuVisible]);
+
+  const getWeatherName = (weather: WeatherType) =>
+    t(`nui_menu.page_main.world.weathers.${weather}`);
+
+  const checkWorldEnabled = () => {
+    if (isRedm || !worldState.enabled) {
+      enqueueSnackbar(t("nui_menu.page_main.world.unavailable"), { variant: "error" });
+      return false;
+    }
+    return true;
+  };
+
+  const handleSetWeather = (weather: WeatherType) => {
+    if (!checkWorldEnabled()) return;
+    fetchNui("setWorldWeather", { weather });
+    enqueueSnackbar(
+      t("nui_menu.page_main.world.weather.success", { weather: getWeatherName(weather) }),
+      { variant: "success" }
+    );
+  };
+
+  const handleWeatherList = () => {
+    if (!checkWorldEnabled()) return;
+    openDialog({
+      title: t("nui_menu.page_main.world.weather.dialog_title"),
+      description: t("nui_menu.page_main.world.weather.dialog_desc"),
+      placeholder: t("nui_menu.page_main.world.weather.dialog_placeholder"),
+      suggestions: WEATHER_TYPES.map(getWeatherName),
+      onSubmit: (input: string) => {
+        const weather = findWeather(input, getWeatherName);
+        if (!weather) {
+          return enqueueSnackbar(t("nui_menu.page_main.world.weather.dialog_error"), {
+            variant: "error",
+          });
+        }
+        handleSetWeather(weather);
+      },
+    });
+  };
+
+  const handleSetTime = (hour: number, minute: number) => {
+    if (!checkWorldEnabled()) return;
+    fetchNui("setWorldTime", { hour, minute });
+    enqueueSnackbar(
+      t("nui_menu.page_main.world.time.success", { time: formatTime(hour, minute) }),
+      { variant: "success" }
+    );
+  };
+
+  const handleTimeDialog = () => {
+    if (!checkWorldEnabled()) return;
+    openDialog({
+      title: t("nui_menu.page_main.world.time.dialog_title"),
+      description: t("nui_menu.page_main.world.time.dialog_desc"),
+      placeholder: "18:30",
+      suggestions: ["00:00", "06:00", "09:00", "12:00", "15:00", "18:00", "21:00"],
+      onSubmit: (input: string) => {
+        // accepts 18:30, 18.30, 18 30, 1830 and 18
+        const match = input.trim().match(/^(\d{1,2})(?:\s*[:.,h ]\s*(\d{1,2})|(\d{2}))?$/i);
+        const hour = match ? parseInt(match[1]) : NaN;
+        const minute = match ? parseInt(match[2] ?? match[3] ?? "0") : NaN;
+        if (isNaN(hour) || isNaN(minute) || hour > 23 || minute > 59) {
+          return enqueueSnackbar(t("nui_menu.page_main.world.time.dialog_error"), {
+            variant: "error",
+          });
+        }
+        handleSetTime(hour, minute);
+      },
+    });
+  };
+
+  const handleToggleFreeze = () => {
+    if (!checkWorldEnabled()) return;
+    const frozen = !worldState.frozen;
+    fetchNui("setWorldFrozen", { frozen });
+    enqueueSnackbar(
+      t(frozen
+        ? "nui_menu.page_main.world.freeze.success_frozen"
+        : "nui_menu.page_main.world.freeze.success_unfrozen"),
+      { variant: "success" }
+    );
+  };
+
+  const getCurrentWorldTime = useCallback(() => getWorldTime(worldState), [worldState]);
+
   const handleTogglePlayerIds = () => {
     fetchNui("togglePlayerIDs");
   };
@@ -490,6 +630,64 @@ export const MainPageList: React.FC = () => {
         ],
       },
 
+      //WORLD - WEATHER
+      {
+        title: t("nui_menu.page_main.world.weather.title"),
+        requiredPermission: "menu.world",
+        isMultiAction: true,
+        currentValue: worldState.weather,
+        isWeatherItem: true,
+        actions: [
+          ...WEATHER_TYPES.map((weather) => ({
+            name: (
+              <>
+                {getWeatherName(weather)}
+                {weather === worldState.weather && (
+                  <span style={{ fontSize: 12 }}>
+                    &nbsp;({t("nui_menu.page_main.world.weather.current")})
+                  </span>
+                )}
+              </>
+            ),
+            label: t("nui_menu.page_main.world.weather.label"),
+            value: weather,
+            icon: weatherIcons[weather],
+            onSelect: () => handleSetWeather(weather),
+          })),
+          {
+            name: t("nui_menu.page_main.world.weather.list_title"),
+            label: t("nui_menu.page_main.world.weather.list_label"),
+            value: "__list__",
+            icon: <FormatListBulleted />,
+            onSelect: handleWeatherList,
+          },
+        ],
+      },
+
+      //WORLD - TIME
+      {
+        title: t("nui_menu.page_main.world.time.title"),
+        requiredPermission: "menu.world",
+        isTimeItem: true,
+        icon: <AccessTime />,
+        getTime: getCurrentWorldTime,
+        formatTime,
+        tag: worldState.frozen ? t("nui_menu.page_main.world.time.frozen_tag") : undefined,
+        label: t("nui_menu.page_main.world.time.label"),
+        previewLabel: (time: string) => t("nui_menu.page_main.world.time.label_preview", { time }),
+        onConfirm: handleSetTime,
+        onSelect: handleTimeDialog,
+      },
+      {
+        title: t(worldState.frozen
+          ? "nui_menu.page_main.world.freeze.title_unfreeze"
+          : "nui_menu.page_main.world.freeze.title_freeze"),
+        label: t("nui_menu.page_main.world.freeze.label"),
+        requiredPermission: "menu.world",
+        icon: worldState.frozen ? <PlayCircle /> : <PauseCircle />,
+        onSelect: handleToggleFreeze,
+      },
+
       //MISC
       {
         title: t("nui_menu.page_main.announcement.title"),
@@ -518,15 +716,41 @@ export const MainPageList: React.FC = () => {
       //   onSelect: handleSpawnWeapon,
       // },
     ],
-    [playerMode, teleportMode, vehicleMode, healMode, serverCtx, isRedm, lastVehicleSpawned]
+    [playerMode, teleportMode, vehicleMode, healMode, serverCtx, isRedm, lastVehicleSpawned, worldState, getCurrentWorldTime]
   );
+
+  // SPACE on the weather row opens the list of all weather types
+  const { isDialogOpen } = useDialogContext();
+  const weatherItemIndex = menuListItems.findIndex((item) => (item as any).isWeatherItem);
+  useEffect(() => {
+    if (!menuVisible || isDialogOpen || curSelected !== weatherItemIndex) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.code !== "Space" || e.repeat) return;
+      e.preventDefault();
+      if (!userHasPerm("menu.world", userPerms)) {
+        return enqueueSnackbar(t("nui_menu.misc.no_perms"), { variant: "error" });
+      }
+      fetchNui("playSound", "enter").catch(() => {});
+      handleWeatherList();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [menuVisible, isDialogOpen, curSelected, weatherItemIndex, worldState, userPerms]);
 
   return (
     // add pb={2} if we don't have that arrow at the bottom
     (<Box sx={{ pointerEvents: 'none' }}>
       <StyledList>
         {menuListItems.map((item, index) =>
-          item.isMultiAction ? (
+          // @ts-ignore
+          item.isTimeItem ? (
+            // @ts-ignore
+            (<MenuListItemTime
+              key={index}
+              selected={curSelected === index}
+              {...item}
+            />)
+          ) : item.isMultiAction ? (
             // @ts-ignore
             (<MenuListItemMulti
               key={index}
@@ -544,7 +768,7 @@ export const MainPageList: React.FC = () => {
         )}
       </StyledList>
       <BoxFadeTop style={{ opacity: curSelected <= 1 ? 0 : 1 }} />
-      <BoxFadeBottom style={{ opacity: curSelected >= 6 ? 0 : 1 }} />
+      <BoxFadeBottom style={{ opacity: curSelected >= menuListItems.length - 1 ? 0 : 1 }} />
       <BoxIcon display="flex" justifyContent="center">
         <ExpandMore />
       </BoxIcon>

@@ -167,6 +167,17 @@ AddEventHandler('txsv:logger:menuEvent', function(source, action, allowed, data)
         if type(data) ~= 'number' then return end
         message = "cleared an area with ".. data .."m radius"
 
+    elseif action == 'worldSetWeather' then
+        if type(data) ~= 'string' then return end
+        message = "changed the server weather to " .. data
+
+    elseif action == 'worldSetTime' then
+        if type(data) ~= 'string' then return end
+        message = "changed the server time to " .. data
+
+    elseif action == 'worldFreezeTime' then
+        message = data and "froze the server time" or "unfroze the server time"
+
     --INTERACTION modal options
     elseif action == 'spectatePlayer' then
         message = 'started spectating player ' .. getLogPlayerName(data)

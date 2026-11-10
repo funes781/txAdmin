@@ -25,6 +25,7 @@ export type ResolvablePermission =
   | "menu.vehicle"
   | "menu.clear_area"
   | "menu.viewids"
+  | "menu.world"
   | "players.spectate"
   | "players.troll"
   | "players.freeze";

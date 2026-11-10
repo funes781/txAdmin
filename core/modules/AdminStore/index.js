@@ -67,6 +67,7 @@ export default class AdminStore {
             'menu.vehicle': 'Spawn / Fix Vehicles',
             'menu.clear_area': 'Reset world area',
             'menu.viewids': 'View Player IDs in-game', //be able to see the ID of the players
+            'menu.world': 'Change Weather / Time',
             'players.direct_message': 'Direct Message',
             'players.whitelist': 'Allowlist',
             'players.warn': 'Warn',

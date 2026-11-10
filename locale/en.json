@@ -196,6 +196,55 @@
                     "success": "Healed and revived all players."
                 }
             },
+            "world": {
+                "unavailable": "World sync is disabled on this server.",
+                "weather": {
+                    "title": "Weather",
+                    "label": "Use ←/→ to pick a weather and ENTER to apply it to the whole server. SPACE opens the full list",
+                    "current": "current",
+                    "list_title": "Pick from list…",
+                    "list_label": "Press ENTER to open the list of all weather types",
+                    "dialog_title": "Change weather",
+                    "dialog_desc": "Pick a weather type below or type its name.",
+                    "dialog_placeholder": "e.g. Rain",
+                    "dialog_error": "No weather type matches that name.",
+                    "success": "Weather changed to: %{weather}"
+                },
+                "time": {
+                    "title": "Time",
+                    "label": "Press ENTER to type a time, or ←/→ to change it by one hour",
+                    "label_preview": "Press ENTER to set %{time} for the whole server, ←/→ to change",
+                    "dialog_title": "Change time",
+                    "dialog_desc": "Type the time in HH:MM format (e.g. 18:30) or pick one below.",
+                    "dialog_error": "Invalid time, use the HH:MM format.",
+                    "success": "Time changed to %{time}",
+                    "frozen_tag": "frozen"
+                },
+                "freeze": {
+                    "title_freeze": "Freeze time",
+                    "title_unfreeze": "Unfreeze time",
+                    "label": "Stop or resume the clock for the whole server",
+                    "success_frozen": "The server time is now frozen.",
+                    "success_unfrozen": "The server time is running again."
+                },
+                "weathers": {
+                    "EXTRASUNNY": "Extra Sunny",
+                    "CLEAR": "Clear",
+                    "NEUTRAL": "Neutral",
+                    "SMOG": "Smog",
+                    "FOGGY": "Foggy",
+                    "OVERCAST": "Overcast",
+                    "CLOUDS": "Clouds",
+                    "CLEARING": "Clearing",
+                    "RAIN": "Rain",
+                    "THUNDER": "Thunder",
+                    "SNOW": "Snow",
+                    "BLIZZARD": "Blizzard",
+                    "SNOWLIGHT": "Light Snow",
+                    "XMAS": "Christmas (snow)",
+                    "HALLOWEEN": "Halloween"
+                }
+            },
             "announcement": {
                 "title": "Send Announcement",
                 "label": "Send an announcement to all online players.",

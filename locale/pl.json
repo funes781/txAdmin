@@ -196,6 +196,55 @@
                     "success": "Uzdrowiono i uleczono wszystkich graczy."
                 }
             },
+            "world": {
+                "unavailable": "Synchronizacja świata jest wyłączona na tym serwerze.",
+                "weather": {
+                    "title": "Pogoda",
+                    "label": "Strzałkami ←/→ wybierz pogodę, ENTER ustawi ją na całym serwerze. SPACJA otwiera listę",
+                    "current": "aktualna",
+                    "list_title": "Wybierz z listy…",
+                    "list_label": "Naciśnij ENTER, aby otworzyć listę wszystkich pogód",
+                    "dialog_title": "Zmień pogodę",
+                    "dialog_desc": "Wybierz pogodę poniżej albo wpisz jej nazwę.",
+                    "dialog_placeholder": "np. Deszcz",
+                    "dialog_error": "Nie znaleziono pogody o takiej nazwie.",
+                    "success": "Pogoda zmieniona na: %{weather}"
+                },
+                "time": {
+                    "title": "Godzina",
+                    "label": "ENTER, aby wpisać godzinę, albo ←/→, aby zmienić ją o godzinę",
+                    "label_preview": "ENTER ustawi %{time} na całym serwerze, ←/→ zmienia godzinę",
+                    "dialog_title": "Zmień godzinę",
+                    "dialog_desc": "Wpisz godzinę w formacie HH:MM (np. 18:30) albo wybierz jedną poniżej.",
+                    "dialog_error": "Nieprawidłowa godzina, użyj formatu HH:MM.",
+                    "success": "Godzina zmieniona na %{time}",
+                    "frozen_tag": "zatrzymana"
+                },
+                "freeze": {
+                    "title_freeze": "Zatrzymaj czas",
+                    "title_unfreeze": "Wznów upływ czasu",
+                    "label": "Zatrzymuje albo wznawia zegar na całym serwerze",
+                    "success_frozen": "Czas na serwerze został zatrzymany.",
+                    "success_unfrozen": "Czas na serwerze znowu płynie."
+                },
+                "weathers": {
+                    "EXTRASUNNY": "Bardzo słonecznie",
+                    "CLEAR": "Bezchmurnie",
+                    "NEUTRAL": "Neutralnie",
+                    "SMOG": "Smog",
+                    "FOGGY": "Mgła",
+                    "OVERCAST": "Pochmurno",
+                    "CLOUDS": "Chmury",
+                    "CLEARING": "Przejaśnienia",
+                    "RAIN": "Deszcz",
+                    "THUNDER": "Burza",
+                    "SNOW": "Śnieg",
+                    "BLIZZARD": "Zamieć",
+                    "SNOWLIGHT": "Lekki śnieg",
+                    "XMAS": "Święta (śnieg)",
+                    "HALLOWEEN": "Halloween"
+                }
+            },
             "announcement": {
                 "title": "Wyślij ogłoszenie",
                 "label": "Wyślij ogłoszenie do wszystkich graczy na serwerze",

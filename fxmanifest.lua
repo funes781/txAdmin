@@ -38,7 +38,8 @@ server_scripts {
     'resource/menu/server/sv_trollactions.lua',
     'resource/menu/server/sv_player_modal.lua',
     'resource/menu/server/sv_spectate.lua',
-    'resource/menu/server/sv_player_mode.lua'
+    'resource/menu/server/sv_player_mode.lua',
+    'resource/menu/server/sv_world.lua'
 }
 
 client_scripts {
@@ -57,6 +58,7 @@ client_scripts {
     'resource/menu/client/cl_spectate.lua',
     'resource/menu/client/cl_trollactions.lua',
     'resource/menu/client/cl_freeze.lua',
+    'resource/menu/client/cl_world.lua',
     'resource/menu/vendor/freecam/utils.lua',
     'resource/menu/vendor/freecam/config.lua',
     'resource/menu/vendor/freecam/main.lua',
